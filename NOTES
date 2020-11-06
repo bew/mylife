@@ -1,0 +1,86 @@
+Need to introduce variations!!!
+to force specific implementation
+
+This website has a few variations: https://cs.stanford.edu/people/eroberts/courses/soco/projects/2008-09/modeling-natural-systems/gameOfLife2.html
+
+One of them mentions `Cyclic Cellular Automata`:
+
+> In cyclic cellular automata, an ordering of multiple colors is established. Whenever a cell is neighbored by a cell whose color is next in the cycle, it copies that neighbor's color--otherwise, it remains unchanged.
+>
+> One dimensional cyclic cellular automata can be used to model particles that undergo ballistic annihilation. Cycles involving more than 4 colors tend to produce patterns that stabilize more quickly when compared to 3 or 4-color cycles.
+
+Another website, listing many variants (based on the rules for surviving cells vs born cells):
+http://www.mirekw.com/ca/rullex_life.html
+
+Ooooh there is a Maze variant!!!
+https://www.conwaylife.com/wiki/OCA:Maze
+The maze rule is explosive, which means that most randomly-generated starting patterns will explode in all directions. Nonetheless, there are many still lifes and oscillators under this rule. It has no known spaceships
+
+THIS!!! is the main entry point to everything 'Life' related:
+https://www.conwaylife.com/wiki/Main_Page
+
+-----------------
+
+OKAY! So this is the challenge (not redacted):
+
+Make a Life simulator, that can work on any S/B rules (Survival/Birth). (for any variant of the Life game)
+
+[part1] Primary goal is to work with a 2D finite grid of cells.
+[part2] The surface of the grid is now on a cubic volume, where the grid is not flat any more, but connects to the sides to other grids to form a cube. The game still happens in 2D, it's just that the grid does not have an 'edge' anymore :D.
+
+NOTE: For the cubic grid, will need to decide how each 0 1 2 3 4 5 grids are connected!
+Theorically we could connect any side of any grid to any other grid side, without respect to the cubic shape. The same grid could even be connected to any side of itself #yolo!
+For this exercise, let's keep things 'simple' and use a normal cube!
+
+```
+  +-+
+  |0|
+  +-+
+  |1|
++-+-+-+
+|2|3|4|
++-+-+-+
+  |5|
+  +-+
+```
+
+(this way it's easy to debug grids {0, 1} or {1, 2, 3} or {2, 3, 4} as they are next to each other)
+
+>>> Which variations can I bring?
+>>> - part2 (<3)
+>>> - non-binary cell?
+>>>   * cell's age (too easy?)
+>>>   * using a cyclic logic (1, 2, 3, 1, 2, ...), and additional rules (not longer generic?)
+
+INPUT:
+```
+20x10       (size of grid WIDTHxHEIGHT)
+flat        (type of grid: flat vs cubic) (??? OR finite vs infinite ???)
+2,3         (rule for surviving cells (2 or 3 neighbors))
+3,5,6       (rule for new cell birth (3, 5 or 6 neighbors))
+            (? non-binary cell system config ?)
+0           (ID of the grid, always 0 for flat grid, 0->5 for cubic grid)
++--------------------+
+| x   x    xx  x   xx|
+|  xxx  x xx xx   xx |
+|xxx xx  x xx xx x xx|
+|x xx  xxxx  x  xxx x|
+|  x   x  x x   x x  |  (the initial grid (with border?))
+| xx  xx  x x  xx x  |
+|x xx   xx   x   x   |
+| xxx x x x  x x  x  |
+|xxx  xx x xx  xxx xx|
+|x x x   x xx x  x x |
++--------------------+
+```
+
+============================================
+Instead of the cubic [part2], what about an infinite grid?
+--> Too complex for a 'little' side exercise?
+
+The tricky part about infinite grid, is how to represent the grid, and how to store the cells
+And then how to get the neighbors
+
+--> Instead of giving a grid, give a list of alive cell, with coords relative to the starting point
+
+Then for the output, ask to print a portion of the final grid, by giving top-left & bottom-right coord (relative to origin point)
