@@ -1,17 +1,30 @@
 #!/usr/bin/env python3
 
-import abc
 import io
+import os
 from dataclasses import dataclass
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional, TypeVar, Union
+from pprint import pprint
+
+_T = TypeVar("_T")  # generic type declaration
+
+DEBUG = os.environ.get("DEBUG", default=False)
+DEBUG_PREFIX = "DEBUG: "
 
 
-class OutOfBoundError(Exception):
-    pass
+def debug(*args, use_pprint=False, add_prefix=True, **kwargs):
+    if DEBUG:
+        if add_prefix:
+            print(DEBUG_PREFIX, end="")
+        print_fn = pprint if use_pprint else print
+        print_fn(*args, **kwargs)  # type: ignore
 
 
-class GridInterface(abc.ABC):
-    pass
+def debug_multiline(text: str):
+    if DEBUG:
+        for line in text.split("\n"):
+            print(DEBUG_PREFIX, end="")
+            print(line)
 
 
 @dataclass
@@ -23,118 +36,179 @@ class GameRules:
 @dataclass
 class Cell:
     alive: bool
-    computed_neighbors: Optional[int] = None
+    computed_neighbor_count: Optional[int] = None
 
 
-class FlatGrid:
-    def __init__(
-        self,
-        grid_id: int,
-        width: int,
-        height: int,
-        default_cell: Callable[[], Cell],
-    ):
-        self.grid_id = grid_id
-        self.width = width
-        self.height = height
-        self.cells: List[Cell] = [
-            default_cell()
-            for _ in range(width * height)
-        ]
+@dataclass(eq=True, frozen=True)
+class Point:
+    x: int
+    y: int
 
-    def set_cell(self, pos_x: int, pos_y: int, cell: Cell):
-        """Set cell at the given x/y position to `cell`"""
-        cell_index = self._cell_index_from_pos(pos_x=pos_x, pos_y=pos_y)
-        self.cells[cell_index] = cell
+    def __add__(self, other: Union[int, "Point"]) -> "Point":
+        if isinstance(other, Point):
+            return Point(
+                x=self.x + other.x,
+                y=self.y + other.y,
+            )
+        elif isinstance(other, int):
+            return Point(
+                x=self.x + other,
+                y=self.y + other,
+            )
 
-    def get_cell(self, pos_x: int, pos_y: int) -> Cell:
-        """Get cell the given x/y position"""
-        cell_index = self._cell_index_from_pos(pos_x=pos_x, pos_y=pos_y)
-        return self.cells[cell_index]
 
-    def _cell_index_from_pos(self, pos_x: int, pos_y: int) -> int:
-        """Get the 1D position of a cell at the given 2D position (with bound check)"""
-        if not (0 <= pos_x < self.width and 0 <= pos_y < self.height):
-            raise OutOfBoundError(f"Cannot get or set cell x:{pos_x} y:{pos_y} for a grid "
-                                  f"of size {self.width}x{self.height}")
-        return (self.width * pos_y) + pos_x
+@dataclass
+class Rectangle:
+    top_left: Point
+    width: int
+    height: int
 
-    def __str__(self):
-        # Prints the grid in the same format as the input:
+    @classmethod
+    def from_2_points(cls, point1: Point, point2: Point) -> "Rectangle":
+        min_x, max_x = min(point1.x, point2.x), max(point1.x, point2.x)
+        min_y, max_y = min(point1.y, point2.y), max(point1.y, point2.y)
+        width = max_x - min_x + 1
+        height = max_y - min_y + 1
+        return cls(
+            top_left=Point(x=min_x, y=min_y),
+            width=width,
+            height=height
+        )
+
+
+@dataclass
+class WantedResult:
+    generation: int
+    output_rect: Rectangle
+
+
+class InfiniteGrid:
+    def __init__(self):
+        self.alive_cells: Dict[Point, Cell] = {}
+
+    def set_cell(self, point: Point, cell: Cell):
+        """Set cell at the given `point` to `cell`"""
+        self.alive_cells[point] = cell
+
+    def get_cell(self, point: Point) -> Cell:
+        """Get cell at the given `point`, defaults to a dead cell"""
+        return self.alive_cells.get(point, Cell(alive=False))
+
+    def to_str_between(self, point1: Point, point2: Point):
+        rect = Rectangle.from_2_points(point1, point2)
+        return self.to_str_at(rect)
+
+    def to_str_at(self, rect: Rectangle):
+        # Prints the grid between at given rectangle in the same format
+        # as the input:
         # +-----+
         # |cells|
         # +-----+
+
+        debug("Grid to str at: ", end="")
+        debug(rect, use_pprint=True, add_prefix=False)
+
         io_str = io.StringIO()
-        io_str.write(f"{self.grid_id}\n")
-        io_str.write(f"+{'-' * self.width}+")  # frame start
-        for pos_y in range(self.height):
-            io_str.write("\n|")  # frame
-            for pos_x in range(self.width):
-                cell = self.get_cell(pos_x=pos_x, pos_y=pos_y)
+        io_str.write(f"+{'-' * rect.width}+")  # top frame
+        for relative_y in range(rect.height):
+            io_str.write("\n|")  # left frame
+            for relative_x in range(rect.width):
+                real_x = rect.top_left.x + relative_x
+                real_y = rect.top_left.y + relative_y
+                cell = self.get_cell(Point(x=real_x, y=real_y))
+                # debug(f"Read cell REAL[{real_x:>2},{real_y:>2}] "
+                #       f"REL:[{relative_x:>2},{relative_y:>2}]: "
+                #       f"{'alive' if cell.alive else 'dead'}")
                 io_str.write("x" if cell.alive else " ")
-            io_str.write("|")  # frame
-        io_str.write(f"\n+{'-' * self.width}+")  # frame end
+            # debug()
+            io_str.write("|")  # right frame
+        io_str.write(f"\n+{'-' * rect.width}+")  # bottom frame
         return io_str.getvalue()
 
 
-def parse_flat_grid(width, height):
-    grid_id = int(input())
-    parsed_grid = FlatGrid(
-        grid_id=grid_id,
-        width=width,
-        height=height,
-        default_cell=(lambda: Cell(alive=False))  # type: ignore
-    )
-    _ = input()  # skip the frame
-    for pos_y in range(height):
-        line = input()[1:-1]  # skip the frame before/after the grid line
-        for pos_x in range(width):
-            cell_char = line[pos_x]
+def _input_parse_grid(starting_point: Point, width: int, height: int):
+    grid = InfiniteGrid()
+    _ = input()  # skip the top frame
+    for relative_y in range(height):
+        line = input()[1:-1]  # skip the left/right frame around the grid line
+        for relative_x in range(width):
+            cell_char = line[relative_x]
             alive = (cell_char == "x")
-            parsed_grid.set_cell(
-                pos_x=pos_x,
-                pos_y=pos_y,
+            grid.set_cell(
+                starting_point + Point(x=relative_x, y=relative_y),
                 cell=Cell(alive=alive)
             )
-    _ = input()  # skip the frame
-    return parsed_grid
+    _ = input()  # skip the bottom frame
+    return grid
 
 
-class LifeSimulator:
-    def __init__(self, initial_grid: GridInterface):
-        pass
+# class LifeSimulator:
+#     def __init__(self, initial_grid: InfiniteGrid, rules: GameRules):
+#         self.initial_grid = initial_grid
+#         self.current_grid = initial_grid
+#         self.rules = rules
 
 
-def parse_input():
-    board_width, board_height = [
-        int(val)
-        for val in input().split("x", maxsplit=1)
-    ]
-    grid_type = input()
-    surviving_conditions = [int(val) for val in input().split(",")]
-    birth_conditions = [int(val) for val in input().split(",")]
+def _input_split(sep: str, fn: Callable[[str], _T], maxsplit=-1) -> List[_T]:
+    """
+    Read input and split it up to `maxsplit` times, and pass each elements to `fn`.
+    """
+    return [fn(elem) for elem in input().split(sep, maxsplit=maxsplit)]
+
+
+def _input_parse_point():
+    x, y = _input_split(",", int, maxsplit=1)
+    return Point(x=x, y=y)
+
+
+def parse_challenge_input():
+    surviving_conditions = _input_split(",", int)
+    birth_conditions = _input_split(",", int)
     game_rules = GameRules(
         cell_surviving_neighbors=surviving_conditions,
         cell_birth_neighbors=birth_conditions,
     )
-    _ = input()
 
-    if grid_type == "flat":
-        grid = parse_flat_grid(width=board_width, height=board_height)
-    else:
-        raise Exception(f"Unsupported grid type '{grid_type}'")
+    starting_point = _input_parse_point()
+    given_width, given_height = _input_split("x", int, maxsplit=1)
 
-    print(f"Width: {board_width} x Height: {board_height}")
-    from pprint import pprint; pprint(game_rules)  # noqa: E702
+    grid = _input_parse_grid(
+        starting_point=starting_point,
+        width=given_width,
+        height=given_height
+    )
 
-    print("-- Grid --")
-    print(grid)
+    wanted_generation = int(input())
+    wanted_view_point1 = _input_parse_point()
+    wanted_view_point2 = _input_parse_point()
+    wanted_result = WantedResult(
+        generation=wanted_generation,
+        output_rect=Rectangle.from_2_points(wanted_view_point1, wanted_view_point2),
+    )
 
-    return grid, game_rules
+    debug("--- GIVEN INPUT ---")
+    debug("Initial given grid:")
+    debug(f"  Starting point: {starting_point}")
+    debug(f"  Width: {given_width}")
+    debug(f"  Height: {given_height}")
+    debug_multiline(grid.to_str_at(Rectangle(
+        top_left=starting_point,
+        width=given_width,
+        height=given_height,
+    )))
+
+    debug(game_rules, use_pprint=True)
+    debug(wanted_result, use_pprint=True)
+    debug()
+
+    return grid, game_rules, wanted_result
 
 
 def main():
-    parse_input()
+    grid, rules, wanted_result = parse_challenge_input()
+
+    debug("--- OUPUT ---")
+    print(grid.to_str_at(wanted_result.output_rect))
 
 
 if __name__ == "__main__":

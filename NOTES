@@ -24,63 +24,56 @@ https://www.conwaylife.com/wiki/Main_Page
 OKAY! So this is the challenge (not redacted):
 
 Make a Life simulator, that can work on any S/B rules (Survival/Birth). (for any variant of the Life game)
+With an infinite grid (<3 <3)
 
-[part1] Primary goal is to work with a 2D finite grid of cells.
-[part2] The surface of the grid is now on a cubic volume, where the grid is not flat any more, but connects to the sides to other grids to form a cube. The game still happens in 2D, it's just that the grid does not have an 'edge' anymore :D.
+Split the challenge in 2 parts:
 
-NOTE: For the cubic grid, will need to decide how each 0 1 2 3 4 5 grids are connected!
-Theorically we could connect any side of any grid to any other grid side, without respect to the cubic shape. The same grid could even be connected to any side of itself #yolo!
-For this exercise, let's keep things 'simple' and use a normal cube!
+[part1]: Partial input parsing (skip rules & output info), store to infinite grid, render back a different view of the grid
+[part2]: Full input parsing (game rules, wanted generation, ..), implement the LifeVM (find another name?), play!
 
-```
-  +-+
-  |0|
-  +-+
-  |1|
-+-+-+-+
-|2|3|4|
-+-+-+-+
-  |5|
-  +-+
-```
-
-(this way it's easy to debug grids {0, 1} or {1, 2, 3} or {2, 3, 4} as they are next to each other)
+For the final output, we ask to print a portion of the grid, by giving 2 points (relative to origin) defining the output rectangle.
 
 >>> Which variations can I bring?
->>> - part2 (<3)
 >>> - non-binary cell?
->>>   * cell's age (too easy?)
->>>   * using a cyclic logic (1, 2, 3, 1, 2, ...), and additional rules (not longer generic?)
+>>>   * cell's age, or a ramp of chars representing its age
 
-INPUT:
+INPUT FORMAT (and example):
 ```
-20x10       (size of grid WIDTHxHEIGHT)
-flat        (type of grid: flat vs cubic) (??? OR finite vs infinite ???)
-2,3         (rule for surviving cells (2 or 3 neighbors))
-3,5,6       (rule for new cell birth (3, 5 or 6 neighbors))
-            (? non-binary cell system config ?)
-0           (ID of the grid, always 0 for flat grid, 0->5 for cubic grid)
+2,3         (game rule for surviving cells (2 or 3 neighbors))
+3,5,6       (game rule for new cell birth (3, 5 or 6 neighbors))
+-10,-5      (top-left coordinate of the initial grid)
+20x10       (size of initial grid WIDTHxHEIGHT)
 +--------------------+
 | x   x    xx  x   xx|
 |  xxx  x xx xx   xx |
 |xxx xx  x xx xx x xx|
 |x xx  xxxx  x  xxx x|
-|  x   x  x x   x x  |  (the initial grid (with border?))
-| xx  xx  x x  xx x  |
-|x xx   xx   x   x   |
-| xxx x x x  x x  x  |
-|xxx  xx x xx  xxx xx|
-|x x x   x xx x  x x |
+|  x x xx xxx   x x x|  (the initial grid (with border?))
+| xx  xR  xOx  xx x  |  (in this representation, O shows the 0,0 coordinate (it is dead inside))
+|x xx   xx x xx  x   |  (in this representation, R shows the top-left coordinate of output below)
+|  xx x x  x x x  x  |
+|x x  xx x     xxx xx|
+|  x x   x xx x  x x |
 +--------------------+
+42          (wanted generation [0 means no evolution])
+3,3         (first coordinate of the wanted output rectangle)
+-4,0        (second coordinate of the wanted output rectangle)
+```
+
+OUTPUT FORMAT: same as input grid format
+top left real coordinate: `-4,0`
+bottom right real coordinate: `3,3`
+```
++--------+
+|x  x x  |
+| xx x xx|
+| x  x x |
+|x x     |
++--------+
 ```
 
 ============================================
-Instead of the cubic [part2], what about an infinite grid?
---> Too complex for a 'little' side exercise?
-
 The tricky part about infinite grid, is how to represent the grid, and how to store the cells
 And then how to get the neighbors
 
---> Instead of giving a grid, give a list of alive cell, with coords relative to the starting point
-
-Then for the output, ask to print a portion of the final grid, by giving top-left & bottom-right coord (relative to origin point)
+Best way is to use a `Dict[Point, Cell]` to keep the alive cells, and work with that.
