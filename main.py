@@ -2,6 +2,7 @@
 
 import io
 import os
+import time
 from dataclasses import dataclass
 from typing import Callable, Dict, List, TypeVar, Union, Set
 from pprint import pprint
@@ -143,6 +144,61 @@ def _input_parse_grid(starting_point: Point, width: int, height: int):
     return grid
 
 
+class GodPower:
+    # HE, who decides who lives / dies / is born for the next generation
+
+    def __init__(self, rules: GameRules):
+        self.rules = rules
+
+    def apply_rules(self, grid: InfiniteGrid) -> InfiniteGrid:
+        # Holds the potential new/surviving cells for next generation
+        # and their current neighbors count
+        potential_new_cells: Dict[Point, int] = {}
+        potential_surviving_cells: Dict[Point, int] = {}
+
+        for alive_cell in grid.all_alive_cell_points():
+            # An alive cell is a candidate for next gen
+            potential_surviving_cells[alive_cell] = self._count_neighbors(grid, alive_cell)
+            # All its neighbors are candidates for next gen
+            for neighbor_cell in self._neighbor_cells(alive_cell):
+                potential_new_cells[neighbor_cell] = self._count_neighbors(grid, neighbor_cell)
+
+        new_grid = InfiniteGrid()
+        # use god power to decide who lives / dies / is born, based on the world rules
+        for cell, neighbors_count in potential_new_cells.items():
+            if neighbors_count in self.rules.cell_birth_neighbors:
+                new_grid.set_state(cell, alive=True)
+        for cell, neighbors_count in potential_surviving_cells.items():
+            if neighbors_count in self.rules.cell_surviving_neighbors:
+                new_grid.set_state(cell, alive=True)
+
+        # return a new grid with the next generation of cells
+        return new_grid
+
+    def _count_neighbors(self, grid: InfiniteGrid, cell_point: Point) -> int:
+        neighbors_count = 0
+        for neighbor_point in self._neighbor_cells(cell_point):
+            if grid.is_alive(neighbor_point):
+                neighbors_count += 1
+        return neighbors_count
+
+    def _neighbor_cells(self, cell_point: Point) -> List[Point]:
+        # ABC
+        # D E (the center is the cell being checked)
+        # FGH
+        return [
+            cell_point + Point(x=-1, y=-1),  # A
+            cell_point + Point(x=0, y=-1),  # B
+            cell_point + Point(x=1, y=-1),  # C
+            cell_point + Point(x=-1, y=0),  # D
+            # skipping the checked cell
+            cell_point + Point(x=1, y=0),  # E
+            cell_point + Point(x=-1, y=1),  # F
+            cell_point + Point(x=0, y=1),  # G
+            cell_point + Point(x=1, y=1),  # H
+        ]
+
+
 def _input_split(sep: str, fn: Callable[[str], _T], maxsplit=-1) -> List[_T]:
     """
     Read input and split it up to `maxsplit` times, and pass each elements to `fn`.
@@ -200,6 +256,18 @@ def parse_challenge_input():
 
 def main():
     grid, rules, wanted_result = parse_challenge_input()
+
+    # TODO: test GodPower !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    god = GodPower(rules)
+    for generation in range(0, wanted_result.generation + 1):  # range condition is `idx < stop`
+        if generation != 0:
+            grid = god.apply_rules(grid)
+        debug(f"--- GENERATION {generation}")
+        debug()
+        debug_multiline(grid.to_str_at(wanted_result.output_rect))
+        if DEBUG:
+            time.sleep(1)
 
     debug("--- OUPUT ---")
     print(grid.to_str_at(wanted_result.output_rect))
