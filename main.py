@@ -3,7 +3,7 @@
 import io
 import os
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, TypeVar, Union
+from typing import Callable, Dict, List, TypeVar, Union, Set
 from pprint import pprint
 
 _T = TypeVar("_T")  # generic type declaration
@@ -31,12 +31,6 @@ def debug_multiline(text: str):
 class GameRules:
     cell_surviving_neighbors: List[int]
     cell_birth_neighbors: List[int]
-
-
-@dataclass
-class Cell:
-    alive: bool
-    computed_neighbor_count: Optional[int] = None
 
 
 @dataclass(eq=True, frozen=True)
@@ -84,15 +78,22 @@ class WantedResult:
 
 class InfiniteGrid:
     def __init__(self):
-        self.alive_cells: Dict[Point, Cell] = {}
+        self._alive_cell_points: Set[Point] = set()
 
-    def set_cell(self, point: Point, cell: Cell):
-        """Set cell at the given `point` to `cell`"""
-        self.alive_cells[point] = cell
+    def set_state(self, point: Point, alive: bool):
+        """Set alive state of cell at the given `point`"""
+        if alive:
+            # NOTE: does not raise if present
+            self._alive_cell_points.add(point)
+        else:
+            # NOTE: does not raise if not present
+            self._alive_cell_points.discard(point)
 
-    def get_cell(self, point: Point) -> Cell:
-        """Get cell at the given `point`, defaults to a dead cell"""
-        return self.alive_cells.get(point, Cell(alive=False))
+    def is_alive(self, point: Point) -> bool:
+        return point in self._alive_cell_points
+
+    def all_alive_cell_points(self) -> Set[Point]:
+        return self._alive_cell_points.copy()
 
     def to_str_between(self, point1: Point, point2: Point):
         rect = Rectangle.from_2_points(point1, point2)
@@ -115,11 +116,11 @@ class InfiniteGrid:
             for relative_x in range(rect.width):
                 real_x = rect.top_left.x + relative_x
                 real_y = rect.top_left.y + relative_y
-                cell = self.get_cell(Point(x=real_x, y=real_y))
+                is_alive = self.is_alive(Point(x=real_x, y=real_y))
                 # debug(f"Read cell REAL[{real_x:>2},{real_y:>2}] "
                 #       f"REL:[{relative_x:>2},{relative_y:>2}]: "
-                #       f"{'alive' if cell.alive else 'dead'}")
-                io_str.write("x" if cell.alive else " ")
+                #       f"{'alive' if is_alive else 'dead'}")
+                io_str.write("x" if is_alive else " ")
             # debug()
             io_str.write("|")  # right frame
         io_str.write(f"\n+{'-' * rect.width}+")  # bottom frame
@@ -134,19 +135,12 @@ def _input_parse_grid(starting_point: Point, width: int, height: int):
         for relative_x in range(width):
             cell_char = line[relative_x]
             alive = (cell_char == "x")
-            grid.set_cell(
+            grid.set_state(
                 starting_point + Point(x=relative_x, y=relative_y),
-                cell=Cell(alive=alive)
+                alive=alive
             )
     _ = input()  # skip the bottom frame
     return grid
-
-
-# class LifeSimulator:
-#     def __init__(self, initial_grid: InfiniteGrid, rules: GameRules):
-#         self.initial_grid = initial_grid
-#         self.current_grid = initial_grid
-#         self.rules = rules
 
 
 def _input_split(sep: str, fn: Callable[[str], _T], maxsplit=-1) -> List[_T]:

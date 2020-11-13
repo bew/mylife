@@ -76,4 +76,4 @@ bottom right real coordinate: `3,3`
 The tricky part about infinite grid, is how to represent the grid, and how to store the cells
 And then how to get the neighbors
 
-Best way is to use a `Dict[Point, Cell]` to keep the alive cells, and work with that.
+Best way is to use a `Set[Point]` to keep the alive cells, and work with that (nice for functional programing!).
