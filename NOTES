@@ -39,8 +39,8 @@ For the final output, we ask to print a portion of the grid, by giving 2 points 
 
 INPUT FORMAT (and example):
 ```
-2,3         (game rule for surviving cells (2 or 3 neighbors))
 3,5,6       (game rule for new cell birth (3, 5 or 6 neighbors))
+2,3         (game rule for surviving cells (2 or 3 neighbors))
 -10,-5      (top-left coordinate of the initial grid)
 20x10       (size of initial grid WIDTHxHEIGHT)
 +--------------------+

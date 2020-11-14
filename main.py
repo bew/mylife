@@ -30,8 +30,8 @@ def debug_multiline(text: str):
 
 @dataclass
 class GameRules:
-    cell_surviving_neighbors: List[int]
     cell_birth_neighbors: List[int]
+    cell_surviving_neighbors: List[int]
 
 
 @dataclass(eq=True, frozen=True)
@@ -212,11 +212,11 @@ def _input_parse_point():
 
 
 def parse_challenge_input():
-    surviving_conditions = _input_split(",", int)
     birth_conditions = _input_split(",", int)
+    surviving_conditions = _input_split(",", int)
     game_rules = GameRules(
-        cell_surviving_neighbors=surviving_conditions,
         cell_birth_neighbors=birth_conditions,
+        cell_surviving_neighbors=surviving_conditions,
     )
 
     starting_point = _input_parse_point()
