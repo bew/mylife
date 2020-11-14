@@ -110,8 +110,10 @@ class InfiniteGrid:
         # |cells|
         # +-----+
 
-        debug("Grid to str at: ", end="")
-        debug(rect, use_pprint=True, add_prefix=False)
+        # debug("Grid to str at: ", end="")
+        # debug(rect, use_pprint=True, add_prefix=False)
+
+        alive_cell_char = "█" if DEBUG else "x"
 
         io_str = io.StringIO()
         io_str.write(f"+{'-' * rect.width}+")  # top frame
@@ -124,7 +126,7 @@ class InfiniteGrid:
                 # debug(f"Read cell REAL[{real_x:>2},{real_y:>2}] "
                 #       f"REL:[{relative_x:>2},{relative_y:>2}]: "
                 #       f"{'alive' if is_alive else 'dead'}")
-                io_str.write("x" if is_alive else " ")
+                io_str.write(alive_cell_char if is_alive else " ")
             # debug()
             io_str.write("|")  # right frame
         io_str.write(f"\n+{'-' * rect.width}+")  # bottom frame
@@ -260,8 +262,6 @@ def parse_challenge_input():
 def main():
     grid, rules, wanted_result = parse_challenge_input()
 
-    # TODO: test GodPower !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
     god = GodPower(rules)
     for generation in range(0, wanted_result.generation + 1):  # range condition is `idx < stop`
         if generation != 0:  # We already have the grid of generation 0
@@ -271,7 +271,7 @@ def main():
         debug_multiline(grid.to_str_at(wanted_result.output_rect))
         debug()
         if DEBUG:
-            time.sleep(1)
+            time.sleep(0.1)
 
     debug("--- OUPUT ---")
     print(grid.to_str_at(wanted_result.output_rect))
