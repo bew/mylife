@@ -3,6 +3,7 @@
 import io
 import os
 import time
+import sys
 from dataclasses import dataclass
 from typing import Callable, Dict, List, TypeVar, Union, Set
 from pprint import pprint
@@ -16,16 +17,18 @@ DEBUG_PREFIX = "DEBUG: "
 def debug(*args, use_pprint=False, add_prefix=True, **kwargs):
     if DEBUG:
         if add_prefix:
-            print(DEBUG_PREFIX, end="")
-        print_fn = pprint if use_pprint else print
-        print_fn(*args, **kwargs)  # type: ignore
+            print(DEBUG_PREFIX, end="", file=sys.stderr)
+        if use_pprint:
+            pprint(*args, stream=sys.stderr, **kwargs)  # type: ignore
+        else:
+            print(*args, file=sys.stderr, **kwargs)
 
 
 def debug_multiline(text: str):
     if DEBUG:
         for line in text.split("\n"):
-            print(DEBUG_PREFIX, end="")
-            print(line)
+            print(DEBUG_PREFIX, end="", file=sys.stderr)
+            print(line, file=sys.stderr)
 
 
 @dataclass
@@ -261,11 +264,12 @@ def main():
 
     god = GodPower(rules)
     for generation in range(0, wanted_result.generation + 1):  # range condition is `idx < stop`
-        if generation != 0:
+        if generation != 0:  # We already have the grid of generation 0
             grid = god.apply_rules(grid)
         debug(f"--- GENERATION {generation}")
         debug()
         debug_multiline(grid.to_str_at(wanted_result.output_rect))
+        debug()
         if DEBUG:
             time.sleep(1)
 
