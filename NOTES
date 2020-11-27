@@ -21,9 +21,9 @@ https://www.conwaylife.com/wiki/Main_Page
 
 -----------------
 
-OKAY! So this is the challenge (not redacted):
+OKAY! So this is the challenge:
 
-Make a Life simulator, that can work on any S/B rules (Survival/Birth). (for any variant of the Life game)
+Make a Life simulator, that can work on any B/S rules (Birth/Survival). (for any variant of the Life game)
 With an infinite grid (<3 <3)
 
 Split the challenge in 2 parts:
@@ -43,34 +43,28 @@ INPUT FORMAT (and example):
 2,3         (game rule for surviving cells (2 or 3 neighbors))
 -10,-5      (top-left coordinate of the initial grid)
 20x10       (size of initial grid WIDTHxHEIGHT)
-+--------------------+
-| x   x    xx  x   xx|
-|  xxx  x xx xx   xx |
-|xxx xx  x xx xx x xx|
-|x xx  xxxx  x  xxx x|
-|  x x xx xxx   x x x|  (the initial grid (with border?))
-| xx  xR  xOx  xx x  |  (in this representation, O shows the 0,0 coordinate (it is dead inside))
-|x xx   xx x xx  x   |  (in this representation, R shows the top-left coordinate of output below)
-|  xx x x  x x x  x  |
-|x x  xx x     xxx xx|
-|  x x   x xx x  x x |
-+--------------------+
+_x___x____xx__x___xx
+__xxx__x_xx_xx___xx_
+xxx_xx__x_xx_xx_x_xx
+x_xx__xxxx__x__xxx_x  (the initial grid)
+__x_x_xx_xxx___x_x_x
+_xx__xR__xOx__xx_x__  (in this representation, O shows the 0,0 coordinate (it is dead inside))
+x_xx___xx_x_xx__x___  (in this representation, R shows the top-left coordinate of output below)
+__xx_x_x__x_x_x__x__  (R & O are not present in the input normally, origin point could be far from the initial grid!)
+x_x__xx_x_____xxx_xx
+__x_x___x_xx_x__x_x_
 42          (wanted generation [0 means no evolution])
 3,3         (first coordinate of the wanted output rectangle)
 -4,0        (second coordinate of the wanted output rectangle)
 ```
 
-OUTPUT FORMAT: same as input grid format
+OUTPUT FORMAT: same as input grid, but on a single line, each grid line separated by '|'.
 top left real coordinate: `-4,0`
 bottom right real coordinate: `3,3`
 ```
-+--------+
-|x  x x  |
-| xx x xx|
-| x  x x |
-|x x     |
-+--------+
+x__x_x__|_xx_x_xx|_x__x_x_|x_x_____
 ```
+(with ending newline)
 
 ============================================
 The tricky part about infinite grid, is how to represent the grid, and how to store the cells

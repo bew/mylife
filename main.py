@@ -104,21 +104,23 @@ class InfiniteGrid:
         return self.to_str_at(rect)
 
     def to_str_at(self, rect: Rectangle):
-        # Prints the grid between at given rectangle in the same format
-        # as the input:
-        # +-----+
-        # |cells|
-        # +-----+
+        # Prints the grid at given rectangle
+        # The format is a single line of 'x' and '_',
+        # separated by '|' between each grid lines.
+        # When DEBUG, the format is multiline for normal
+        # human consumption.
 
         # debug("Grid to str at: ", end="")
         # debug(rect, use_pprint=True, add_prefix=False)
 
         alive_cell_char = "█" if DEBUG else "x"
+        dead_cell_char = "_"
+        endline = "\n" if DEBUG else "|"
 
         io_str = io.StringIO()
-        io_str.write(f"+{'-' * rect.width}+")  # top frame
         for relative_y in range(rect.height):
-            io_str.write("\n|")  # left frame
+            if relative_y > 0:
+                io_str.write(endline)
             for relative_x in range(rect.width):
                 real_x = rect.top_left.x + relative_x
                 real_y = rect.top_left.y + relative_y
@@ -126,18 +128,15 @@ class InfiniteGrid:
                 # debug(f"Read cell REAL[{real_x:>2},{real_y:>2}] "
                 #       f"REL:[{relative_x:>2},{relative_y:>2}]: "
                 #       f"{'alive' if is_alive else 'dead'}")
-                io_str.write(alive_cell_char if is_alive else " ")
+                io_str.write(alive_cell_char if is_alive else dead_cell_char)
             # debug()
-            io_str.write("|")  # right frame
-        io_str.write(f"\n+{'-' * rect.width}+")  # bottom frame
         return io_str.getvalue()
 
 
 def _input_parse_grid(starting_point: Point, width: int, height: int):
     grid = InfiniteGrid()
-    _ = input()  # skip the top frame
     for relative_y in range(height):
-        line = input()[1:-1]  # skip the left/right frame around the grid line
+        line = input()
         for relative_x in range(width):
             cell_char = line[relative_x]
             alive = (cell_char == "x")
@@ -145,7 +144,6 @@ def _input_parse_grid(starting_point: Point, width: int, height: int):
                 starting_point + Point(x=relative_x, y=relative_y),
                 alive=alive
             )
-    _ = input()  # skip the bottom frame
     return grid
 
 
